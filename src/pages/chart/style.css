@@ -1,0 +1,38 @@
+html,
+body,
+#root,
+.App {
+  margin: 0;
+  height: 100%;
+}
+
+.App {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.chart-container {
+  flex: 1;
+}
+
+.tv-lightweight-charts {
+  flex: 1;
+  height: 100%;
+}
+
+h1,
+p {
+  font-family: Lato;
+}
+
+.legend {
+	position: absolute;
+	left: 12px;
+	top: 70px;
+	z-index: 9999;
+	font-size: 12px;
+	line-height: 18px;
+	font-weight: bold;
+  color: #fff;
+}

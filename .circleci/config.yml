@@ -1,0 +1,58 @@
+version: 2.1
+
+parameters:
+  build_new_image:
+    type: boolean
+    default: true
+  update_bot_ui:
+    type: boolean
+    default: true
+
+jobs:
+  deploy-jarvis-build-image:
+
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - add_ssh_keys:
+          fingerprints:
+            - "3a:f5:c7:87:1a:2b:48:91:be:3b:e5:a7:4d:51:e7:a0" 
+      - when:
+          condition: << pipeline.parameters.build_new_image >>
+          steps:
+            - run:
+                name: "Deploy over SSH"
+                command: |
+                  ssh -o "StrictHostKeyChecking no" $SSH_USER@$SSH_HOST "cd /opt/jarvis/jarvis-deploy && ansible-playbook build-trading-bot-ui.yml"
+
+  deploy-jarvis-bot-ui:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - add_ssh_keys:
+          fingerprints:
+            - "3a:f5:c7:87:1a:2b:48:91:be:3b:e5:a7:4d:51:e7:a0"
+      - when:
+          condition: << pipeline.parameters.update_bot_ui >>
+          steps:
+            - run:
+                name: "Update Bot UI Deployment"
+                command: |
+                  ssh -o "StrictHostKeyChecking no" $SSH_USER@$SSH_HOST "sh /opt/jarvis/jarvis-trading-bot/scripts/update-bot-ui-deployment.sh"
+
+workflows:
+  version: 2
+  jarvis-trading-ui-workflow:
+    jobs:
+      - deploy-jarvis-build-image:
+          filters:
+            branches:
+              only:
+                - main
+      - deploy-jarvis-bot-ui:
+          filters:
+            branches:
+              only:
+                - main
+          requires:
+            - deploy-jarvis-build-image

@@ -1,0 +1,43 @@
+name: build-deploy-trading-bot
+on:
+  push:
+    branches: [ main ]
+
+env:
+  build_new_image: true
+  update_bot_ui: true
+
+jobs:
+  deploy-build-jarvis-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout SSH Action Repo"
+        if: ${{ env.build_new_image == 'true' || env.update_bot_ui == 'true' }}
+        uses: actions/checkout@v2
+        with:
+          repository: marlosl/ssh-action
+          ref: main
+          token: ${{ secrets.SSH_ACTION_REPO_KEY }}
+          path: .github/actions/ssh-action
+
+      - name: "Deploy over SSH"
+        if: ${{ env.build_new_image == 'true' }}
+        uses: ./.github/actions/ssh-action
+        with:
+          command: |
+            cd /opt/jarvis/jarvis-deploy
+            ansible-playbook build-trading-bot-ui.yml
+
+          host: ${{ secrets.SSH_HOST  }}
+          user: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.JARVIS_DEPLOY_SSH_KEY}}
+
+      - name: "Update Bot UI Deployment"
+        if: ${{ env.update_bot_ui == 'true' }}
+        uses: ./.github/actions/ssh-action
+        with:
+          command: kubectl patch -n jarvis-trading-ui deployment trade-bot-ui -p "{\"spec\":{\"template\":{\"metadata\":{\"labels\":{\"date\":\"`date +'%s'`\"}}}}}"
+
+          host: ${{ secrets.SSH_HOST  }}
+          user: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.JARVIS_DEPLOY_SSH_KEY}}
